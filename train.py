@@ -183,11 +183,15 @@ if __name__ == "__main__":
         checkpoint = torch.load(resume_path)
         model.load_state_dict(checkpoint['params'])
         optimizer.load_state_dict(checkpoint['optimizer'])
+
+        if lr_scheduler is not None:
+            lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 200)
         if 'accuracy_history' in checkpoint.keys():
             acc_his = checkpoint['accuracy_history']
         if 'loss_history' in checkpoint.keys():
             loss_his = checkpoint['loss_history']
-        print("%s has trained on %d epochs" % (model_name, checkpoint['epoch']))
+
+        print("%s has been trained for %d epochs" % (model_name, checkpoint['epoch']))
 
     print("Start training at:", datetime.datetime.now())
     start_time = time.time()
@@ -202,6 +206,9 @@ if __name__ == "__main__":
     end_time = time.time()
     print("Testing took: ------- %s seconds -------" % (end_time - start_time))
 
+    if args.save:
+        save(model_name)
+
     plt.subplot(2, 1, 1)
     plt.xlabel('Epoch')
     plt.title('Validation Correctness')
@@ -212,11 +219,18 @@ if __name__ == "__main__":
     plt.title("Training Loss")
     plt.plot(loss_his, '--', color='b')
 
-    plt.gcf().set_size_inches(15, 15)
-    plt.show()
+    plt.gcf().set_size_inches(10, 5)
 
-    if args.save:
-        save(model_name)
+    try:
+        fig_path = os.path.join('./figs/%s.png' % model_name)
+        plt.savefig(fig_path)
+    except FileNotFoundError:
+        os.mkdir('./figs')
+        fig_path = os.path.join('./figs/%s.png' % model_name)
+        plt.savefig(fig_path)
+
+
+
 
 
 
