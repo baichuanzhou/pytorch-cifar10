@@ -20,7 +20,7 @@ def get_model(model_name):
         sys.exit()
 
     print(summary(model, torch.zeros(1, 3, 32, 32), show_input=True))
-    print("Model ", model_name, "created...")
+    print("Model ", name, "created...")
     return model
 
 

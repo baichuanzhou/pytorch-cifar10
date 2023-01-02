@@ -22,9 +22,11 @@ class BasicBlock(nn.Module):
             self,
             in_planes: int,
             planes: int,
-            stride: int = 1
+            stride: int = 1,
+            expansion: int = 1
     ) -> None:
         super(BasicBlock, self).__init__()
+        self.expansion = expansion
         self.conv1 = nn.Conv2d(
             in_channels=in_planes,
             out_channels=planes,
@@ -80,9 +82,11 @@ class BottleNeck(nn.Module):
             self,
             in_planes: int,
             planes: int,
-            stride: int = 1
+            stride: int = 1,
+            expansion: int = 2
     ) -> None:
         super(BottleNeck, self).__init__()
+        self.expansion = expansion
         self.conv1 = nn.Conv2d(
             in_channels=in_planes,
             out_channels=planes,
@@ -104,23 +108,23 @@ class BottleNeck(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(
             in_channels=planes,
-            out_channels=planes * self.expansion,
+            out_channels=in_planes * self.expansion,
             kernel_size=(1, 1),
             stride=(1, 1),
             bias=False
         )
-        self.bn3 = nn.BatchNorm2d(planes * self.expansion)
+        self.bn3 = nn.BatchNorm2d(in_planes * self.expansion)
 
-        if stride != 1 or in_planes != self.expansion * planes:
+        if stride != 1 or planes != self.expansion * in_planes:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(
                     in_channels=in_planes,
-                    out_channels=self.expansion * planes,
+                    out_channels=self.expansion * in_planes,
                     kernel_size=(1, 1),
                     stride=(stride, stride),
                     bias=False
                 ),
-                nn.BatchNorm2d(self.expansion * planes)
+                nn.BatchNorm2d(self.expansion * in_planes)
             )
         else:
             self.shortcut = nn.Sequential()
@@ -160,10 +164,10 @@ class ResNet(nn.Module):
             padding=(1, 1)
         )
         self.bn1 = nn.BatchNorm2d(16)
-        self.layer1 = self._make_layer(block, 2 * num_blocks, 16, 1)
-        self.layer2 = self._make_layer(block, 2 * num_blocks, 32, 2)
-        self.layer3 = self._make_layer(block, 2 * num_blocks, 64, 2)
-        self.linear = nn.Linear(64 * block.expansion, num_classes)
+        self.layer1 = self._make_layer(block, 2 * num_blocks, 16, 16, 1, 1)
+        self.layer2 = self._make_layer(block, 2 * num_blocks, 16, 32, 2, 2)
+        self.layer3 = self._make_layer(block, 2 * num_blocks, 32, 64, 2, 2)
+        self.linear = nn.Linear(64, num_classes)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.relu = nn.ReLU(inplace=True)
 
@@ -178,16 +182,20 @@ class ResNet(nn.Module):
             self,
             block: Type[Union[BasicBlock, BottleNeck]],
             num_blocks: int,
+            in_planes: int,
             planes: int,
-            stride: int
+            stride: int,
+            expansion: int
     ) -> nn.Sequential:
         strides = [stride] + (num_blocks - 1) * [1]
         block_layers = []
         for stride in strides:
-            block_layers.append(
-                block(self.in_planes, planes, stride)
-            )
-            self.in_planes = planes * block.expansion
+            if in_planes == planes:
+                expansion = 1
+            block_layer = block(in_planes, planes, stride, expansion)
+            block_layers.append(block_layer)
+            if in_planes != planes:
+                in_planes = planes
 
         return nn.Sequential(*block_layers)
 
@@ -222,8 +230,9 @@ def make_resnet(num_layers: int) -> ResNet:
 
 
 def test():
-    ResNet50 = ResNet(BottleNeck, 8)
+    ResNet8 = ResNet(BottleNeck, 1)
     x = torch.ones((1, 3, 32, 32))
-    out = ResNet50(x)
+    for m in ResNet8.modules():
+        print(m)
+    out = ResNet8(x)
     print(out.size())
-

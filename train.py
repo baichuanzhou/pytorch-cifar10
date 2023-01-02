@@ -35,7 +35,7 @@ parser.add_argument("--epoch", action="store", type=int, default=1, help="define
 
 # Now we preprocess the cifar-10 data provided by pytorch
 
-NUM_TRAIN = 49000
+NUM_TRAIN = 45000
 transform = T.Compose([
     T.ToTensor(),
     T.RandomCrop(32, padding=4),
@@ -86,11 +86,11 @@ def train(epoch=10, lr_scheduler=None):
             if i % 80 == 0:
                 print("Epoch %d with iteration %d, current loss: %.2f" % (e, i, loss.item()))
 
-            if lr_scheduler is not None:
-                lr_scheduler.step()
             loss_his.append(loss.item())
 
         print(f"Training with Epoch {e}")
+        if lr_scheduler is not None:
+            lr_scheduler.step()
         acc = check_accuracy(loader_val)
         acc_his.append(acc)
 
@@ -145,7 +145,10 @@ if __name__ == "__main__":
     if args.device != 'cpu' and args.device != 'cuda':
         raise ValueError("Device must be cuda or cpu")
 
-    device = args.device
+    if args.device == 'cuda' and torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
 
     # set the dtype
     if args.dtype:
@@ -164,8 +167,8 @@ if __name__ == "__main__":
     # set the optimizer
     lr_scheduler = None
     if model_name.find('resnet'):
-        optimizer = optim.SGD(params=model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
-        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 200)
+        optimizer = optim.SGD(params=model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
+        lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[45, 68, 90])
     else:
         if str.lower(args.optim) == "sgd":
             optimizer = optim.SGD(params=model.parameters(), lr=args.lr, momentum=0.9, nesterov=True)
@@ -183,9 +186,10 @@ if __name__ == "__main__":
         checkpoint = torch.load(resume_path)
         model.load_state_dict(checkpoint['params'])
         optimizer.load_state_dict(checkpoint['optimizer'])
+        last_epoch = checkpoint['epoch']
 
         if lr_scheduler is not None:
-            lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 200)
+            lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 45, 70, 90, 100], last_epoch=last_epoch-1)
         if 'accuracy_history' in checkpoint.keys():
             acc_his = checkpoint['accuracy_history']
         if 'loss_history' in checkpoint.keys():
@@ -219,7 +223,7 @@ if __name__ == "__main__":
     plt.title("Training Loss")
     plt.plot(loss_his, '--', color='b')
 
-    plt.gcf().set_size_inches(10, 5)
+    plt.gcf().set_size_inches(15, 15)
 
     try:
         fig_path = os.path.join('./figs/%s.png' % model_name)
