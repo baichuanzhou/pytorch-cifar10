@@ -69,7 +69,9 @@ def train(epoch=10, lr_scheduler=None):
             y = y.to(device=device)
 
             scores = model(x)
+
             criterion = F.cross_entropy
+
             loss = criterion(scores, y)
 
             # Zero out the gradients before so that it can take the next step
@@ -77,7 +79,6 @@ def train(epoch=10, lr_scheduler=None):
 
             # Backward pass so that losses and gradients can flow through the computational graph
             loss.backward()
-
             # Update the gradients and takes a step
             optimizer.step()
 

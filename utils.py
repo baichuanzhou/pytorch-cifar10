@@ -13,6 +13,9 @@ def get_model(model_name):
         num_layers = int(model_name.lower().strip('resnet'))
         model = make_resnet(num_layers)
         name = "ResNet" + str(num_layers)
+    elif 'googlenet' in str.lower(model_name):
+        model = GoogleNet()
+        name = "GoogLeNet"
     else:
         print("We have not implemented model: " + model_name + " yet")
         print("Here's what we have:")
