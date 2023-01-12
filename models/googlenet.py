@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from utils import *
 
 
 GoogLeNetOutputs = namedtuple("GoogLeNetOutputs", ["logits", "aux_logits2", "aux_logits1"])
@@ -11,7 +12,9 @@ GoogLeNetOutputs.__annotations__ = {"logits": Tensor, "aux_logits2": Optional[Te
 
 _GoogLeNetOutputs = GoogLeNetOutputs
 
-__all__ = ["GoogleNet"]
+
+__all__ = ["GoogLeNet",
+           "googlenet"]
 
 
 class GoogleConv2d(nn.Module):
@@ -83,9 +86,9 @@ class InceptionAux(nn.Module):
         return out
 
 
-class GoogleNet(nn.Module):
+class GoogLeNet(nn.Module):
     def __init__(self, aux_classifier=False):
-        super(GoogleNet, self).__init__()
+        super(GoogLeNet, self).__init__()
 
         # Input layer (32 x 32 x 3) -> (32 x 32 x 192)
         self.conv1 = GoogleConv2d(3, 192, kernel_size=3, padding=1)
@@ -177,8 +180,17 @@ class GoogleNet(nn.Module):
         else:
             return out
 
+
 def test():
     x = torch.zeros((1, 3, 32, 32))
-    googlenet = GoogleNet(aux_classifier=True)
+    googlenet = GoogLeNet(aux_classifier=True)
     out = googlenet(x)
     print(out)
+
+
+def googlenet(pretrained=False):
+    if not pretrained:
+        return GoogLeNet(aux_classifier=True)
+    else:
+        load_model = load("GoogLeNet")
+        return load_model

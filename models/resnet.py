@@ -11,6 +11,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from utils import *
+
+"""
+__all__ = ['ResNet',
+           'make_resnet',
+           'resnet20',
+           'resnet32',
+           'resnet44',
+           'resnet56']
+"""
 
 
 class BasicBlock(nn.Module):
@@ -236,3 +246,43 @@ def test():
         print(m)
     out = ResNet8(x)
     print(out.size())
+
+
+def resnet20(pretrained=False):
+    if not pretrained:
+        return make_resnet(20)
+    else:
+        load_model = load("ResNet20")
+        return load_model
+
+
+def resnet32(pretrained=True):
+    if not pretrained:
+        return make_resnet(32)
+    else:
+        load_model = load("ResNet32")
+        return load_model
+
+
+def resnet44(pretrained=True):
+    if not pretrained:
+        return make_resnet(32)
+    else:
+        load_model = load("ResNet44")
+        return load_model
+
+
+def resnet56(pretrained=True):
+    if not pretrained:
+        return make_resnet(56)
+    else:
+        load_model = load("ResNet56")
+        return load_model
+
+
+def resnet104(pretrained=True):
+    if not pretrained:
+        return make_resnet(104)
+    else:
+        load_model = load("ResNet104")
+        return load_model
