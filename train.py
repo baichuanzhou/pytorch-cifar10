@@ -9,7 +9,6 @@ from torch.utils.data import sampler
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
-
 import torchvision.datasets as dset
 import torchvision.transforms as T
 
@@ -30,7 +29,7 @@ parser.add_argument("--net", "-n", type=str, required=True, help="choose the neu
 parser.add_argument("--device", "-d", type=str, required=True, help="choose the preferred device to work on")
 parser.add_argument("--dtype", type=str, default="torch.float32", help="set the dtype for the model")
 parser.add_argument("--save", "-s", action="store_true", default=False, help="save the parameters of the model")
-parser.add_argument("--optim", action="store", type=str, default="Adam", help="choose the optimization method")
+parser.add_argument("--optim", action="store", type=str, default="sgd", help="choose the optimization method")
 parser.add_argument("--epoch", action="store", type=int, default=1, help="define the epochs you want for training")
 
 # Now we preprocess the cifar-10 data provided by pytorch
@@ -41,102 +40,20 @@ transform = T.Compose([
     T.RandomCrop(32, padding=4),
     T.RandomHorizontalFlip(),
     T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-    ]
+]
 )
 
 cifar10_train = dset.CIFAR10('./datasets', train=True, download=True, transform=transform)
-loader_train = DataLoader(cifar10_train, batch_size=64, sampler=sampler.SubsetRandomSampler(range(NUM_TRAIN)))
+loader_train = DataLoader(cifar10_train, batch_size=128, sampler=sampler.SubsetRandomSampler(range(NUM_TRAIN)))
 
 # We use 1000 samples as validation set.
 cifar10_val = dset.CIFAR10('./datasets', train=True, download=True, transform=transform)
-loader_val = DataLoader(cifar10_val, batch_size=64, sampler=sampler.SubsetRandomSampler(range(NUM_TRAIN, 50000)))
+loader_val = DataLoader(cifar10_val, batch_size=128, sampler=sampler.SubsetRandomSampler(range(NUM_TRAIN, 50000)))
 
 cifar10_test = dset.CIFAR10('./datasets', train=False, download=True, transform=transform)
-loader_test = DataLoader(cifar10_test, batch_size=64)
-
+loader_test = DataLoader(cifar10_test, batch_size=128)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-
-def train(epoch=10, lr_scheduler=None):
-    model.to(device=device)
-    optimizer_to(optimizer, device)
-    for e in range(epoch):
-        for i, (x, y) in enumerate(loader_train):
-            model.train()   # Set the model to training mode
-
-            x = x.to(device=device)
-            y = y.to(device=device)
-
-            scores = model(x)
-
-            criterion = F.cross_entropy
-
-            loss = criterion(scores, y)
-
-            # Zero out the gradients before so that it can take the next step
-            optimizer.zero_grad()
-
-            # Backward pass so that losses and gradients can flow through the computational graph
-            loss.backward()
-            # Update the gradients and takes a step
-            optimizer.step()
-
-            if e == 0 and i == 0:
-                print("Initial loss: %.2f" % loss.item())   # Check if the initial loss is log(num_classes)
-            if i % 80 == 0:
-                print("Epoch %d with iteration %d, current loss: %.2f" % (e, i, loss.item()))
-
-            loss_his.append(loss.item())
-
-        print(f"Training with Epoch {e}")
-        if lr_scheduler is not None:
-            lr_scheduler.step()
-        acc = check_accuracy(loader_val)
-        acc_his.append(acc)
-
-
-def check_accuracy(loader):
-    if loader.dataset.train:
-        print("Checking on validation set...")
-    else:
-        print("Checking on test set...")
-    num_correct = 0
-    num_samples = 0
-    model.eval()
-    with torch.no_grad():
-        for x, y in loader:
-            x = x.to(device=device)
-            y = y.to(device=device)
-            scores = model(x)
-            _, preds = scores.max(1)
-            num_correct += (preds == y).sum()
-            num_samples += y.size(0)
-        acc = float(num_correct) / num_samples
-        print("Got %d / %d correct rates: %.2f" % (num_correct, num_samples, 100 * acc) + "%")
-    return acc
-
-
-def save(name):
-    if not os.path.isdir('checkpoints'):
-        os.mkdir('checkpoints')
-    if os.path.isfile('./checkpoints/%s.pth' % name):
-        checkpoint = torch.load('./checkpoints/%s.pth' % name)
-        checkpoint['params'] = model.state_dict()
-        checkpoint['optimizer'] = optimizer.state_dict()
-        checkpoint['accuracy_history'] = acc_his
-        checkpoint['loss_history'] = loss_his
-        checkpoint['epoch'] += epochs
-    else:
-        checkpoint = {
-            'params': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'accuracy_history': acc_his,
-            'loss_history': loss_his,
-            'epoch': epochs
-        }
-    print("Saving %s's parameters" % name)
-    torch.save(checkpoint, './checkpoints/%s.pth' % name)
 
 
 if __name__ == "__main__":
@@ -163,22 +80,19 @@ if __name__ == "__main__":
     acc_his = []
     loss_his = []
     model_name = args.net
-    model = get_model(model_name)
+    model, model_name = get_model(model_name)
 
-    # set the optimizer
-    lr_scheduler = None
-    if model_name.find('resnet'):
-        optimizer = optim.SGD(params=model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
-        lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[45, 68, 90])
+    if str.lower(args.optim) == "sgd":
+        optimizer = optim.SGD(params=model.parameters(), lr=args.lr, momentum=0.9, nesterov=True)
+    elif str.lower(args.optim) == "adam":
+        optimizer = optim.Adam(params=model.parameters(), lr=args.lr)
+    elif str.lower(args.optim) == "rmsprop":
+        optimizer = optim.RMSprop(params=model.parameters(), lr=args.lr)
     else:
-        if str.lower(args.optim) == "sgd":
-            optimizer = optim.SGD(params=model.parameters(), lr=args.lr, momentum=0.9, nesterov=True)
-        elif str.lower(args.optim) == "adam":
-            optimizer = optim.Adam(params=model.parameters(), lr=args.lr)
-        elif str.lower(args.optim) == "rmsprop":
-            optimizer = optim.RMSprop(params=model.parameters(), lr=args.lr)
-        else:
-            optimizer = eval("optim." + args.optim + "(params=model.parameters, lr=args.lr)")
+        optimizer = eval("optim." + args.optim + "(params=model.parameters, lr=args.lr)")
+
+    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 45, 70, 90, 100])
+
     epochs = args.epoch
     if args.resume:
         resume_path = os.path.join('checkpoints/%s.pth' % model_name)
@@ -189,8 +103,8 @@ if __name__ == "__main__":
         optimizer.load_state_dict(checkpoint['optimizer'])
         last_epoch = checkpoint['epoch']
 
-        if lr_scheduler is not None:
-            lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 45, 70, 90, 100], last_epoch=last_epoch-1)
+        lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 45, 70, 90, 100],
+                                                      last_epoch=last_epoch - 1)
         if 'accuracy_history' in checkpoint.keys():
             acc_his = checkpoint['accuracy_history']
         if 'loss_history' in checkpoint.keys():
@@ -201,18 +115,31 @@ if __name__ == "__main__":
     print("Start training at:", datetime.datetime.now())
     start_time = time.time()
 
-    train(epochs, lr_scheduler)
+    train(model,
+          optimizer,
+          loader_train=loader_train,
+          loader_val=loader_val,
+          loss_his=loss_his,
+          acc_his=acc_his,
+          epoch=epochs,
+          lr_scheduler=lr_scheduler)
+
     end_time = time.time()
     print("Training took: ------- %s seconds -------" % (end_time - start_time))
 
     print("Start testing at:", datetime.datetime.now())
     start_time = time.time()
-    acc = check_accuracy(loader_test)
+    acc = check_accuracy(model, loader_test)
     end_time = time.time()
     print("Testing took: ------- %s seconds -------" % (end_time - start_time))
 
     if args.save:
-        save(model_name)
+        save(model_name,
+             model=model,
+             optimizer=optimizer,
+             loss_his=loss_his,
+             acc_his=acc_his,
+             epochs=epochs)
 
     plt.subplot(2, 1, 1)
     plt.xlabel('Epoch')
@@ -233,12 +160,3 @@ if __name__ == "__main__":
         os.mkdir('./figs')
         fig_path = os.path.join('./figs/%s.png' % model_name)
         plt.savefig(fig_path)
-
-
-
-
-
-
-
-
-
