@@ -94,6 +94,10 @@ if __name__ == "__main__":
     lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 45, 70, 90, 100])
 
     epochs = args.epoch
+    if "DenseNet" in model_name:
+        optimizer = optim.SGD(params=model.parameters(), lr=args.lr, momentum=0.9, nesterov=True, weight_decay=1e-4)
+        lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[epochs * 0.5, epochs * 0.75])
+
     if args.resume:
         resume_path = os.path.join('checkpoints/%s.pth' % model_name)
         assert os.path.isfile(resume_path), "path for file %s does not exist" % resume_path

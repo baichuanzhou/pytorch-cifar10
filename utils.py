@@ -4,6 +4,8 @@ from pytorch_model_summary import summary
 import torch
 import os
 import torch.nn.functional as F
+import torch.nn as nn
+import re
 
 existing_models = ["LeNet", "ResNet", "GoogLeNet"]
 
@@ -13,12 +15,19 @@ def get_model(model_name, print_info=True):
         model = models.LeNet()
         name = "LeNet"
     elif 'resnet' in str.lower(model_name):
-        num_layers = int(model_name.lower().strip('resnet'))
-        model = models.make_resnet(num_layers)
-        name = "ResNet" + str(num_layers)
+        num_of_layers = int(model_name.lower().strip('resnet'))
+        model = models.make_resnet(num_of_layers)
+        name = "ResNet" + str(num_of_layers)
     elif 'googlenet' in str.lower(model_name):
         model = models.GoogLeNet()
         name = "GoogLeNet"
+    elif 'densenet' in str.lower(model_name):
+        re_num = r"\d+"
+        num_of_layers = int(re.findall(re_num, model_name)[0])
+        bottleneck = ('bc' in str.lower(model_name))
+        model = models.densenet(num_of_layers, bottleneck)
+        suffix = "BC" if "bc" in str.lower(model_name) else ""
+        name = "DenseNet" + suffix + "-" + str(num_of_layers)
     else:
         print("We have not implemented model: " + model_name + " yet")
         print("Here's what we have:")
@@ -150,3 +159,12 @@ def load(model_name, device='cuda'):
         raise FileNotFoundError('No such models')
     model.to(device=device)
     return model
+
+
+def dimension_sanity_check(model: nn.Module, output_shape) -> None:
+    x = torch.zeros(1, 3, 32, 32)
+    out = model(x)
+    if out.shape == output_shape:
+        print("Sane!")
+    else:
+        print("Something's wrong")
