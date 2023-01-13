@@ -190,7 +190,7 @@ def test():
 
 def googlenet(pretrained=False):
     if not pretrained:
-        return GoogLeNet(aux_classifier=True)
+        return GoogLeNet()
     else:
         load_model = load("GoogLeNet")
         return load_model
