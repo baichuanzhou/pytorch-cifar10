@@ -93,10 +93,10 @@ class GoogLeNet(nn.Module):
         # Input layer (32 x 32 x 3) -> (32 x 32 x 192)
         self.conv1 = GoogleConv2d(3, 192, kernel_size=3, padding=1)
 
-        # (32 x 32 x 192) -> (32 x 32 x 256(64 + 128 + 32 + 32)
+        # (32 x 32 x 192) -> (32 x 32 x 256(64 + 128 + 32 + 32))
         self.inception3a = Inception(192, 64, 96, 128, 16, 32, 32)
 
-        # (32 x 32 x 256) -> (32 x 32 x 480(128 + 192 + 96 + 64)
+        # (32 x 32 x 256) -> (32 x 32 x 480(128 + 192 + 96 + 64))
         self.inception3b = Inception(256, 128, 128, 192, 32, 96, 64)
 
         # (32 x 32 x 480) -> (16 x 16 x 480)
