@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import re
 
-existing_models = ["LeNet", "ResNet", "GoogLeNet"]
+existing_models = ["LeNet", "ResNet", "GoogLeNet", "ViT", "DenseNet"]
 
 
 def get_model(model_name, print_info=True):

@@ -136,8 +136,6 @@ class FeedForwardBlock(nn.Sequential):
     def __init__(self, emb_size: int, expansion: int = 4, dropout: float = 0):
         super().__init__(
             nn.Linear(emb_size, expansion * emb_size),
-            nn.GELU(),
-            nn.Dropout(dropout),
             nn.Linear(expansion * emb_size, emb_size)
         )
 
@@ -202,7 +200,7 @@ class ViT(nn.Sequential):
                  img_size: int = 32,
                  patch_size: int = 2,
                  num_heads: int = 8,
-                 emb_size: int = 256,
+                 emb_size: int = 384,
                  transformer_depth: int = 8,
                  n_classes: int = 10,
                  dropout: float = 0.1

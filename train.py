@@ -46,7 +46,7 @@ transform = T.Compose([
 cifar10_train = dset.CIFAR10('./datasets', train=True, download=True, transform=transform)
 loader_train = DataLoader(cifar10_train, batch_size=128, sampler=sampler.SubsetRandomSampler(range(NUM_TRAIN)))
 
-# We use 1000 samples as validation set.
+# We use 5000 samples as validation set.
 cifar10_val = dset.CIFAR10('./datasets', train=True, download=True, transform=transform)
 loader_val = DataLoader(cifar10_val, batch_size=128, sampler=sampler.SubsetRandomSampler(range(NUM_TRAIN, 50000)))
 
