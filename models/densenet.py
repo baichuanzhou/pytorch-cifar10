@@ -56,7 +56,7 @@ class _DenseLayer(nn.Sequential):
     def __init__(self,
                  in_planes: int,
                  growth_rate: int,
-                 drop_rate: float = 0.2,
+                 drop_rate: float = 0.5,
                  bottleneck: bool = True,
                  bn_size: int = 4
                  ) -> None:
@@ -80,7 +80,7 @@ class _DenseBlock(nn.Sequential):
                  num_of_layers: int,
                  in_planes: int,
                  growth_rate: int,
-                 drop_rate: float = 0.2,
+                 drop_rate: float = 0.5,
                  bottleneck: bool = True,
                  bn_size: int = 4) -> None:
         super(_DenseBlock, self).__init__()
@@ -101,7 +101,7 @@ class DenseNet(nn.Sequential):
                  in_planes: int = 3,
                  reduction: float = 0.5,
                  bottleneck: bool = True,
-                 drop_rate: float = 0.2,
+                 drop_rate: float = 0.5,
                  block_config=(6, 12, 24, 16),
                  bn_size: int = 4,
                  num_classes=10

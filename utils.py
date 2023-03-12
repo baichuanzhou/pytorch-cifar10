@@ -28,6 +28,9 @@ def get_model(model_name, print_info=True):
         model = models.densenet(num_of_layers, bottleneck)
         suffix = "BC" if "bc" in str.lower(model_name) else ""
         name = "DenseNet" + suffix + "-" + str(num_of_layers)
+    elif 'vit' in str.lower(model_name):
+        model = models.ViT()
+        name = "ViT"
     else:
         print("We have not implemented model: " + model_name + " yet")
         print("Here's what we have:")

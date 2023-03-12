@@ -98,6 +98,10 @@ if __name__ == "__main__":
         optimizer = optim.SGD(params=model.parameters(), lr=args.lr, momentum=0.9, nesterov=True, weight_decay=1e-4)
         lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[epochs * 0.5, epochs * 0.75])
 
+    if "ViT" in model_name:
+        optimizer = optim.Adam(params=model.parameters(), lr=args.lr, eps=1e-8)
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
+
     if args.resume:
         resume_path = os.path.join('checkpoints/%s.pth' % model_name)
         assert os.path.isfile(resume_path), "path for file %s does not exist" % resume_path
